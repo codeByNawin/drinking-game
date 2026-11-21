@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>สุ่มเพื่อนดื่ม 🍻</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Sarabun', 'Noto Sans Thai', sans-serif;
+    background: radial-gradient(ellipse at top, #2a1a0f 0%, #140a05 100%);
+    color: #f5e6d3;
+    min-height: 100vh;
+    overflow-x: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .screen { display: none; padding: 20px; min-height: 100vh; max-width: 600px; margin: 0 auto; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  .header { text-align: center; padding: 20px 0 30px; }
+  .header h1 { font-size: 32px; color: #fbbf24; margin-bottom: 8px; }
+  .header p { font-size: 14px; opacity: 0.7; }
+
+  .section {
+    background: rgba(255,255,255,0.04);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(251, 191, 36, 0.12);
+  }
+  .section-title {
+    font-size: 16px;
+    color: #fbbf24;
+    margin-bottom: 14px;
+    font-weight: 700;
+  }
+
+  .input-row { display: flex; gap: 8px; }
+  .input-row input {
+    flex: 1;
+    padding: 14px 16px;
+    font-size: 16px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    border-radius: 12px;
+    color: #f5e6d3;
+    outline: none;
+    font-family: inherit;
+  }
+  .input-row input:focus { border-color: #fbbf24; }
+  .input-row button {
+    padding: 14px 20px;
+    font-size: 16px;
+    background: #fbbf24;
+    color: #1a1410;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .players {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+    min-height: 40px;
+  }
+  .player-chip {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+    padding: 8px 6px 8px 14px;
+    border-radius: 20px;
+    font-size: 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .player-chip .remove {
+    cursor: pointer;
+    opacity: 0.6;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0 8px;
+  }
+  .empty-players {
+    color: rgba(245, 230, 211, 0.4);
+    font-size: 14px;
+    font-style: italic;
+    padding: 4px 0;
+  }
+
+  .mode-options { display: flex; flex-direction: column; gap: 10px; }
+  .mode-option {
+    padding: 16px;
+    background: rgba(255,255,255,0.04);
+    border: 2px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .mode-option.selected {
+    border-color: #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+  }
+  .mode-option-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .mode-option-desc { font-size: 13px; opacity: 0.7; line-height: 1.5; }
+
+  .start-btn {
+    width: 100%;
+    padding: 20px;
+    font-size: 20px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #1a1410;
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    margin-top: 10px;
+    box-shadow: 0 4px 24px rgba(251, 191, 36, 0.35);
+    font-family: inherit;
+  }
+  .start-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .back-btn {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #f5e6d3;
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .mode-badge {
+    background: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .players-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    min-height: 44px;
+  }
+  .player-status {
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 13px;
+    transition: all 0.4s;
+    border: 1px solid transparent;
+  }
+  .player-status.active {
+    background: rgba(251, 191, 36, 0.12);
+    color: #fbbf24;
+    border-color: rgba(251, 191, 36, 0.3);
+  }
+  .player-status.out {
+    background: rgba(239, 68, 68, 0.08);
+    color: rgba(239, 68, 68, 0.6);
+    text-decoration: line-through;
+    opacity: 0.5;
+  }
+  .player-status.safe {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.3);
+  }
+
+  .result-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    min-height: 260px;
+  }
+  .result-label { font-size: 16px; opacity: 0.6; margin-bottom: 16px; }
+  .result-name {
+    font-size: 56px;
+    font-weight: 900;
+    text-align: center;
+    margin-bottom: 20px;
+    min-height: 70px;
+    line-height: 1;
+    word-break: break-word;
+    color: #fbbf24;
+  }
+  .result-name.spinning { color: #fbbf24; opacity: 0.9; }
+  .result-name.drink { color: #ef4444; animation: shake 0.5s; }
+  .result-name.safe { color: #10b981; animation: bounce 0.5s; }
+  .result-name.out { color: #ef4444; animation: shake 0.5s; }
+
+  .result-action {
+    font-size: 24px;
+    font-weight: 900;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .result-action.show { opacity: 1; }
+  .result-action.drink { color: #ef4444; }
+  .result-action.safe { color: #10b981; }
+  .result-action.out { color: #ef4444; }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-10px); }
+    40% { transform: translateX(10px); }
+    60% { transform: translateX(-6px); }
+    80% { transform: translateX(6px); }
+  }
+  @keyframes bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+  }
+
+  .spin-btn {
+    width: 100%;
+    padding: 24px;
+    font-size: 22px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    margin-top: 10px;
+    box-shadow: 0 6px 24px rgba(239, 68, 68, 0.4);
+    font-family: inherit;
+    transition: transform 0.1s;
+  }
+  .spin-btn:active { transform: scale(0.98); }
+  .spin-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .spin-btn.safe-mode {
+    background: linear-gradient(135deg, #10b981, #047857);
+    box-shadow: 0 6px 24px rgba(16, 185, 129, 0.4);
+  }
+  .spin-btn.drink-mode {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #1a1410;
+    box-shadow: 0 6px 24px rgba(251, 191, 36, 0.4);
+  }
+
+  .end-screen { justify-content: center; align-items: center; text-align: center; }
+  .end-emoji { font-size: 80px; margin-bottom: 20px; }
+  .end-label { font-size: 18px; opacity: 0.7; margin-bottom: 12px; }
+  .end-name {
+    font-size: 64px;
+    font-weight: 900;
+    color: #ef4444;
+    margin-bottom: 16px;
+    word-break: break-word;
+    animation: shake 0.6s;
+  }
+  .end-action { font-size: 28px; color: #fbbf24; margin-bottom: 40px; font-weight: 700; }
+
+  @media (max-width: 400px) {
+    .result-name { font-size: 44px; }
+    .end-name { font-size: 48px; }
+    .header h1 { font-size: 26px; }
+    .spin-btn { font-size: 20px; padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Setup Screen -->
+<div class="screen active" id="screen-setup">
+  <div class="header">
+    <h1>🍻 สุ่มเพื่อนดื่ม</h1>
+    <p>ใส่ชื่อ · เลือกโหมด · เริ่มเกม</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">👥 ผู้เล่น</div>
+    <div class="input-row">
+      <input type="text" id="player-input" placeholder="ชื่อผู้เล่น..." maxlength="20" autocomplete="off">
+      <button onclick="addPlayer()">เพิ่ม</button>
+    </div>
+    <div class="players" id="players-list"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎮 โหมดเกม</div>
+    <div class="mode-options">
+      <div class="mode-option selected" data-mode="drink" onclick="selectMode('drink')">
+        <div class="mode-option-title">🥃 สุ่มคนดื่ม</div>
+        <div class="mode-option-desc">สุ่มชื่อ คนนั้นดื่มเลย — เล่นไม่จบ กดสุ่มรอบใหม่ได้เรื่อยๆ</div>
+      </div>
+      <div class="mode-option" data-mode="eliminate" onclick="selectMode('eliminate')">
+        <div class="mode-option-title">💀 คัดออก</div>
+        <div class="mode-option-desc">สุ่มใครโดนคัดออก — คนสุดท้ายที่เหลือ แพ้ ดื่ม!</div>
+      </div>
+      <div class="mode-option" data-mode="survive" onclick="selectMode('survive')">
+        <div class="mode-option-title">🛡️ รอด</div>
+        <div class="mode-option-desc">สุ่มใครรอด ปลอดภัย — คนสุดท้ายที่ไม่โดนสุ่ม แพ้ ดื่ม!</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="start-btn" id="start-btn" onclick="startGame()" disabled>เริ่มเกม</button>
+  <div style="text-align:center; margin-top:12px; font-size:12px; opacity:0.4;">ต้องมีอย่างน้อย 2 คน</div>
+</div>
+
+<!-- Game Screen -->
+<div class="screen" id="screen-game">
+  <div class="game-header">
+    <button class="back-btn" onclick="goHome()">← กลับ</button>
+    <div class="mode-badge" id="mode-badge"></div>
+  </div>
+
+  <div class="players-status" id="players-status"></div>
+
+  <div class="result-area">
+    <div class="result-label" id="result-label">กดปุ่มเพื่อสุ่ม</div>
+    <div class="result-name" id="result-name">?</div>
+    <div class="result-action" id="result-action"></div>
+  </div>
+
+  <button class="spin-btn" id="spin-btn" onclick="spin()">🎲 สุ่ม!</button>
+</div>
+
+<!-- End Screen -->
+<div class="screen end-screen" id="screen-end">
+  <div class="end-emoji">🍻</div>
+  <div class="end-label" id="end-label">ผู้แพ้คือ...</div>
+  <div class="end-name" id="end-name"></div>
+  <div class="end-action">ดื่มเลย! 🥃</div>
+  <button class="spin-btn drink-mode" onclick="restartGame()" style="max-width: 320px;">🔄 เล่นอีกรอบ</button>
+  <button class="back-btn" onclick="goHome()" style="margin-top: 16px;">← กลับหน้าแรก</button>
+</div>
+
+<script>
+  let players = [];
+  try {
+    players = JSON.parse(localStorage.getItem('drinkGame_players') || '[]');
+  } catch (e) { players = []; }
+
+  let mode = 'drink';
+  let activePlayers = [];
+  let isSpinning = false;
+
+  function savePlayers() {
+    try { localStorage.setItem('drinkGame_players', JSON.stringify(players)); } catch (e) {}
+  }
+
+  function escapeHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function renderPlayers() {
+    const list = document.getElementById('players-list');
+    if (players.length === 0) {
+      list.innerHTML = '<div class="empty-players">ยังไม่มีผู้เล่น เพิ่มเลย!</div>';
+    } else {
+      list.innerHTML = players.map((p, i) =>
+        `<div class="player-chip">${escapeHtml(p)}<span class="remove" onclick="removePlayer(${i})">×</span></div>`
+      ).join('');
+    }
+    document.getElementById('start-btn').disabled = players.length < 2;
+  }
+
+  function addPlayer() {
+    const input = document.getElementById('player-input');
+    const name = input.value.trim();
+    if (!name) return;
+    if (players.includes(name)) {
+      input.value = '';
+      input.focus();
+      return;
+    }
+    players.push(name);
+    savePlayers();
+    renderPlayers();
+    input.value = '';
+    input.focus();
+  }
+
+  function removePlayer(i) {
+    players.splice(i, 1);
+    savePlayers();
+    renderPlayers();
+  }
+
+  document.getElementById('player-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addPlayer(); }
+  });
+
+  function selectMode(m) {
+    mode = m;
+    document.querySelectorAll('.mode-option').forEach(el => {
+      el.classList.toggle('selected', el.dataset.mode === m);
+    });
+  }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function startGame() {
+    if (players.length < 2) return;
+    activePlayers = [...players];
+    isSpinning = false;
+
+    const badge = document.getElementById('mode-badge');
+    const spinBtn = document.getElementById('spin-btn');
+    spinBtn.classList.remove('safe-mode', 'drink-mode');
+    spinBtn.disabled = false;
+
+    if (mode === 'drink') {
+      badge.textContent = '🥃 สุ่มคนดื่ม';
+      spinBtn.textContent = '🎲 สุ่มคนดื่ม!';
+      spinBtn.classList.add('drink-mode');
+    } else if (mode === 'eliminate') {
+      badge.textContent = '💀 โหมดคัดออก';
+      spinBtn.textContent = '💀 สุ่มคัดออก!';
+    } else {
+      badge.textContent = '🛡️ โหมดรอด';
+      spinBtn.textContent = '🛡️ สุ่มคนรอด!';
+      spinBtn.classList.add('safe-mode');
+    }
+
+    resetResult();
+    renderStatus();
+    showScreen('screen-game');
+  }
+
+  function renderStatus() {
+    const container = document.getElementById('players-status');
+    if (mode === 'drink') {
+      container.innerHTML = players.map(p =>
+        `<div class="player-status active">${escapeHtml(p)}</div>`
+      ).join('');
+    } else if (mode === 'eliminate') {
+      container.innerHTML = players.map(p => {
+        const isActive = activePlayers.includes(p);
+        return `<div class="player-status ${isActive ? 'active' : 'out'}">${escapeHtml(p)}</div>`;
+      }).join('');
+    } else {
+      container.innerHTML = players.map(p => {
+        const isActive = activePlayers.includes(p);
+        return `<div class="player-status ${isActive ? 'active' : 'safe'}">${escapeHtml(p)}</div>`;
+      }).join('');
+    }
+  }
+
+  function resetResult() {
+    document.getElementById('result-name').textContent = '?';
+    document.getElementById('result-name').className = 'result-name';
+    document.getElementById('result-action').textContent = '';
+    document.getElementById('result-action').className = 'result-action';
+    document.getElementById('result-label').textContent = 'กดปุ่มเพื่อสุ่ม';
+  }
+
+  function spin() {
+    if (isSpinning) return;
+
+    const pool = mode === 'drink' ? players : activePlayers;
+    if (pool.length === 0) return;
+
+    isSpinning = true;
+    const spinBtn = document.getElementById('spin-btn');
+    spinBtn.disabled = true;
+
+    const nameEl = document.getElementById('result-name');
+    const actionEl = document.getElementById('result-action');
+    const labelEl = document.getElementById('result-label');
+
+    labelEl.textContent = 'กำลังสุ่ม...';
+    actionEl.className = 'result-action';
+    actionEl.textContent = '';
+    nameEl.className = 'result-name spinning';
+
+    const picked = pool[Math.floor(Math.random() * pool.length)];
+
+    let count = 0;
+    const totalSpins = 18 + Math.floor(Math.random() * 10);
+    let delay = 60;
+
+    function tick() {
+      nameEl.textContent = pool[Math.floor(Math.random() * pool.length)];
+      count++;
+      if (count >= totalSpins) {
+        nameEl.textContent = picked;
+        revealResult(picked);
+        return;
+      }
+      // slow down toward the end
+      if (count > totalSpins * 0.6) delay += 15;
+      setTimeout(tick, delay);
+    }
+    tick();
+  }
+
+  function revealResult(picked) {
+    const nameEl = document.getElementById('result-name');
+    const actionEl = document.getElementById('result-action');
+    const labelEl = document.getElementById('result-label');
+    const spinBtn = document.getElementById('spin-btn');
+
+    if (mode === 'drink') {
+      labelEl.textContent = 'คนนี้โดนไป!';
+      nameEl.className = 'result-name drink';
+      actionEl.className = 'result-action show drink';
+      actionEl.textContent = 'ดื่ม! 🥃';
+      isSpinning = false;
+      spinBtn.disabled = false;
+      spinBtn.textContent = '🎲 สุ่มอีกครั้ง';
+    } else if (mode === 'eliminate') {
+      labelEl.textContent = 'โดนคัดออก!';
+      nameEl.className = 'result-name out';
+      actionEl.className = 'result-action show out';
+      actionEl.textContent = 'ออกจากเกม 💀';
+      activePlayers = activePlayers.filter(p => p !== picked);
+      renderStatus();
+
+      setTimeout(() => {
+        if (activePlayers.length === 1) {
+          endGame(activePlayers[0]);
+        } else {
+          isSpinning = false;
+          spinBtn.disabled = false;
+          spinBtn.textContent = `💀 สุ่มต่อ (เหลือ ${activePlayers.length} คน)`;
+        }
+      }, 1600);
+    } else {
+      labelEl.textContent = 'รอดแล้ว!';
+      nameEl.className = 'result-name safe';
+      actionEl.className = 'result-action show safe';
+      actionEl.textContent = 'ปลอดภัย 🛡️';
+      activePlayers = activePlayers.filter(p => p !== picked);
+      renderStatus();
+
+      setTimeout(() => {
+        if (activePlayers.length === 1) {
+          endGame(activePlayers[0]);
+        } else {
+          isSpinning = false;
+          spinBtn.disabled = false;
+          spinBtn.textContent = `🛡️ สุ่มต่อ (เหลือ ${activePlayers.length} คน)`;
+        }
+      }, 1600);
+    }
+  }
+
+  function endGame(loser) {
+    document.getElementById('end-name').textContent = loser;
+    if (mode === 'eliminate') {
+      document.getElementById('end-label').textContent = 'คนสุดท้ายที่เหลือคือ...';
+    } else {
+      document.getElementById('end-label').textContent = 'คนที่ไม่โดนสุ่มคือ...';
+    }
+    showScreen('screen-end');
+  }
+
+  function restartGame() {
+    startGame();
+  }
+
+  function goHome() {
+    showScreen('screen-setup');
+    renderPlayers();
+  }
+
+  renderPlayers();
+</script>
+
+</body>
+</html>
